@@ -2974,12 +2974,11 @@ out:
 static int __btrfs_mod_ref(struct btrfs_trans_handle *trans,
 			   struct btrfs_root *root,
 			   struct extent_buffer *buf,
-			   int full_backref, int inc, int for_cow)
+			   int full_backref, u64 ref_root, int inc, int for_cow)
 {
 	u64 bytenr;
 	u64 num_bytes;
 	u64 parent;
-	u64 ref_root;
 	u32 nritems;
 	struct btrfs_key key;
 	struct btrfs_file_extent_item *fi;
@@ -2989,7 +2988,6 @@ static int __btrfs_mod_ref(struct btrfs_trans_handle *trans,
 	int (*process_func)(struct btrfs_trans_handle *, struct btrfs_root *,
 			    u64, u64, u64, u64, u64, u64, int);
 
-	ref_root = btrfs_header_owner(buf);
 	nritems = btrfs_header_nritems(buf);
 	level = btrfs_header_level(buf);
 
@@ -3045,13 +3043,19 @@ fail:
 int btrfs_inc_ref(struct btrfs_trans_handle *trans, struct btrfs_root *root,
 		  struct extent_buffer *buf, int full_backref, int for_cow)
 {
-	return __btrfs_mod_ref(trans, root, buf, full_backref, 1, for_cow);
+	u64 ref_root;
+
+	ref_root = btrfs_header_owner(buf);
+
+	return __btrfs_mod_ref(trans, root, buf, full_backref, ref_root,
+			       1, for_cow);
 }
 
 int btrfs_dec_ref(struct btrfs_trans_handle *trans, struct btrfs_root *root,
 		  struct extent_buffer *buf, int full_backref, int for_cow)
 {
-	return __btrfs_mod_ref(trans, root, buf, full_backref, 0, for_cow);
+	return __btrfs_mod_ref(trans, root, buf, full_backref, root->objectid,
+			       0, for_cow);
 }
 
 static int write_one_cache_group(struct btrfs_trans_handle *trans,
