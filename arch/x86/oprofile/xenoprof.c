@@ -147,10 +147,12 @@ int xenoprof_create_files(struct super_block * sb, struct dentry * root)
 
 	for (i = 0; i < num_events; ++i) {
 		struct dentry * dir;
-		char buf[2];
+		char buf[4];
  
-		snprintf(buf, 2, "%d", i);
+		snprintf(buf, sizeof(buf), "%d", i);
 		dir = oprofilefs_mkdir(sb, root, buf);
+		if (!dir)
+			continue;
 		oprofilefs_create_ulong(sb, dir, "enabled",
 					&counter_config[i].enabled);
 		oprofilefs_create_ulong(sb, dir, "event",
