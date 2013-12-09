@@ -1376,7 +1376,8 @@ out:
 	stop = kthread_should_stop();
 	if (!stop && signal_pending(current)) {
 		spin_lock_bh(&np->np_thread_lock);
-		stop = (np->np_thread_state == ISCSI_NP_THREAD_SHUTDOWN);
+		stop = (np->np_thread_state == ISCSI_NP_THREAD_SHUTDOWN ||
+			np->np_thread_state == ISCSI_NP_THREAD_EXIT);
 		spin_unlock_bh(&np->np_thread_lock);
 	}
 	/* Wait for another socket.. */
@@ -1385,8 +1386,10 @@ out:
 exit:
 	iscsi_stop_login_thread_timer(np);
 	spin_lock_bh(&np->np_thread_lock);
-	np->np_thread_state = ISCSI_NP_THREAD_EXIT;
-	np->np_thread = NULL;
+	if (np->np_thread_state != ISCSI_NP_THREAD_EXIT) {
+		np->np_thread_state = ISCSI_NP_THREAD_EXIT;
+		np->np_thread = NULL;
+	}
 	spin_unlock_bh(&np->np_thread_lock);
 
 	return 0;
