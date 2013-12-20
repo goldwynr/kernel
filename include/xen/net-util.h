@@ -58,7 +58,7 @@ static inline int skb_checksum_setup(struct sk_buff *skb,
 	if (csum) {
 		*csum = ~csum_tcpudp_magic(iph->saddr, iph->daddr,
 					   skb->len - iph->ihl*4,
-					   IPPROTO_TCP, 0);
+					   iph->protocol, 0);
 		skb->ip_summed = CHECKSUM_PARTIAL;
 	}
 
