@@ -955,6 +955,12 @@ static int cpsw_ndo_open(struct net_device *ndev)
 		 * receive descs
 		 */
 		cpsw_info(priv, ifup, "submitted %d rx descriptors\n", i);
+
+		if (cpts_register(&priv->pdev->dev, priv->cpts,
+				  priv->data.cpts_clock_mult,
+				  priv->data.cpts_clock_shift))
+			dev_err(priv->dev, "error registering cpts device\n");
+
 	}
 
 	/* Enable Interrupt pacing if configured */
@@ -1001,6 +1007,7 @@ static int cpsw_ndo_stop(struct net_device *ndev)
 	netif_carrier_off(priv->ndev);
 
 	if (cpsw_common_res_usage_state(priv) <= 1) {
+		cpts_unregister(priv->cpts);
 		cpsw_intr_disable(priv);
 		cpdma_ctlr_int_ctrl(priv->dma, false);
 		cpdma_ctlr_stop(priv->dma);
@@ -1751,8 +1758,14 @@ static int cpsw_probe(struct platform_device *pdev)
 		goto clean_cpsw_iores_ret;
 	}
 	priv->regs = ss_regs;
-	priv->version = __raw_readl(&priv->regs->id_ver);
 	priv->host_port = HOST_PORT_NUM;
+	
+	/* Need to enable clocks with runtime PM api to access module
+	 * registers
+	 */
+	pm_runtime_get_sync(&pdev->dev);
+	priv->version = readl(&priv->regs->id_ver);
+	pm_runtime_put_sync(&pdev->dev);
 
 	priv->cpsw_wr_res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	if (!priv->cpsw_wr_res) {
