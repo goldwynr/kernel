@@ -546,6 +546,7 @@ static int __init balloon_init(void)
 	} xen_pod_target_t;
 # endif
 	xen_pod_target_t pod_target = { .domid = DOMID_SELF };
+	unsigned long num_physpages = balloon_num_physpages();
 	int rc;
 #elif defined(CONFIG_X86)
 	unsigned long pfn;
@@ -570,17 +571,11 @@ static int __init balloon_init(void)
 	 * extent of 1. When start_extent > nr_extents (>= in newer Xen), we
 	 * simply get start_extent returned.
 	 */
-	totalram_bias = HYPERVISOR_memory_op(rc != -ENOSYS && rc != 1
-		? XENMEM_maximum_reservation : XENMEM_current_reservation,
-		&pod_target.domid);
-	if ((long)totalram_bias != -ENOSYS) {
-		BUG_ON(totalram_bias < totalram_pages);
-		bs.current_pages = totalram_bias;
-		totalram_bias -= totalram_pages;
-	} else {
-		totalram_bias = 0;
-		bs.current_pages = totalram_pages;
-	}
+	bs.current_pages = pod_target.tot_pages + pod_target.pod_entries
+			   - pod_target.pod_cache_pages;
+	if (rc || bs.current_pages > num_physpages)
+		bs.current_pages = num_physpages;
+	totalram_bias = bs.current_pages - totalram_pages;
 #endif
 	bs.target_pages  = bs.current_pages;
 	bs.balloon_low   = 0;
