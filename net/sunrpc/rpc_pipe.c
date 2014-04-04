@@ -17,7 +17,6 @@
 #include <linux/fsnotify.h>
 #include <linux/kernel.h>
 #include <linux/rcupdate.h>
-#include <linux/utsname.h>
 
 #include <asm/ioctls.h>
 #include <linux/poll.h>
@@ -1136,6 +1135,7 @@ static const struct rpc_pipe_ops gssd_dummy_pipe_ops = {
 	.downcall	= dummy_downcall,
 };
 
+#include <linux/utsname.h>
 /*
  * Here we present a bogus "info" file to keep rpc.gssd happy. We don't expect
  * that it will ever use this info to handle an upcall, but rpc.gssd expects
