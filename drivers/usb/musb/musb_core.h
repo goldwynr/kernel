@@ -338,7 +338,6 @@ struct musb {
 	dma_addr_t		async;
 	dma_addr_t		sync;
 	void __iomem		*sync_va;
-	u8			tusb_revision;
 #endif
 
 	/* passed down from chip/board specific irq handlers */
@@ -432,6 +431,13 @@ struct musb {
 	int			xceiv_old_state;
 #ifdef CONFIG_DEBUG_FS
 	struct dentry		*debugfs_root;
+#endif
+
+#ifndef __GENKSYMS__
+#if defined(CONFIG_USB_MUSB_TUSB6010) || \
+	defined(CONFIG_USB_MUSB_TUSB6010_MODULE)
+	u8			tusb_revision;
+#endif
 #endif
 };
 
