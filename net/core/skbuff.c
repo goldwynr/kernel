@@ -2776,6 +2776,9 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
 	if (unlikely(!proto))
 		return ERR_PTR(-EINVAL);
 
+	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
+		goto err;
+
 	csum = !!can_checksum_protocol(features, proto);
 	__skb_push(skb, doffset);
 	headroom = skb_headroom(skb);
