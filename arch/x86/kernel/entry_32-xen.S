@@ -438,9 +438,10 @@ sysenter_past_esp:
 	jnz sysenter_audit
 sysenter_do_call:
 	cmpl $(NR_syscalls), %eax
-	jae syscall_badsys
+	jae sysenter_badsys
 	call *sys_call_table(,%eax,4)
 	movl %eax,PT_EAX(%esp)
+sysenter_after_call:
 	LOCKDEP_SYS_EXIT
 	DISABLE_INTERRUPTS(CLBR_ANY)
 	TRACE_IRQS_OFF
@@ -757,8 +758,13 @@ END(syscall_fault)
 
 syscall_badsys:
 	movl $-ENOSYS,PT_EAX(%esp)
-	jmp resume_userspace
+	jmp syscall_exit
 END(syscall_badsys)
+
+sysenter_badsys:
+	movl $-ENOSYS,PT_EAX(%esp)
+	jmp sysenter_after_call
+END(sysenter_badsys)
 	CFI_ENDPROC
 /*
  * End of kprobes section
@@ -1473,16 +1479,15 @@ cstar_trace_entry:
 	jmp syscall_exit
 cstar_badsys:
 	movl $-ENOSYS,PT_EAX(%esp)
-.Lcstar_resume:
-	movl PT_ECX(%esp),%ecx
-	movl %ecx,PT_EBP(%esp)		# put user EBP back in place
-	jmp resume_userspace
+	jmp .Lcstar_exit
 	CFI_RESTORE_STATE
 cstar_fault:
 	movl $-EFAULT,%eax
 	SAVE_ALL
 	GET_THREAD_INFO(%ebp)
-	jmp .Lcstar_resume
+	movl PT_ECX(%esp),%ecx
+	movl %ecx,PT_EBP(%esp)		# put user EBP back in place
+	jmp resume_userspace
 	CFI_ENDPROC
 ENDPROC(ia32pv_cstar_target)
 
